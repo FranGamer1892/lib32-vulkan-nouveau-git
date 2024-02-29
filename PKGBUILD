@@ -3,7 +3,7 @@
 
 pkgname=lib32-vulkan-nouveau-git
 pkgdesc="Nouveau Vulkan (NVK) EXPERIMENTAL Mesa driver with some additions (32-bit Git version)"
-pkgver=24.0.branchpoint.r1759.gf933536
+pkgver=24.1.0_devel.185534.4c73e529332.d41d8cd
 pkgrel=1
 arch=('x86_64')
 depends=('lib32-libdrm' 'lib32-libxshmfence' 'lib32-libx11' 'lib32-systemd' 'lib32-vulkan-icd-loader' 'lib32-wayland')
@@ -14,15 +14,29 @@ optdepends=('lib32-vulkan-mesa-layers: Additional Vulkan layers'
 provides=('lib32-vulkan-driver')
 url="https://gitlab.freedesktop.org/mesa/mesa"
 license=('MIT AND BSD-3-Clause AND SGI-B-2.0')
-source=("git+${url}.git"
-        nak-iadd3-imad.patch
-        nvk-memory-budget.patch
+source=("mesa::git+https://gitlab.freedesktop.org/mesa/mesa.git#commit=4c73e529332d217de79f16659d24ea2dbfd1b3ab"
         LICENSE)
 sha512sums=('SKIP'
-            '6c4ed4c9c7dce79debb77cd9b828f628088101936c4e2b2994e56723f86e61799b278a9333f08813082d0a4153ac41870669da8ac47106aa20c7fc7dee8812e8'
-            '4da33481cf0c4ccab193ff4fff652a98ef7940b10d12c0e3a69280236ddc9463c7813d390c5461af0478f98a6f223736a1eec14986d72a4b0f51edb28e713d95'
             'f9f0d0ccf166fe6cb684478b6f1e1ab1f2850431c06aa041738563eb1808a004e52cdec823c103c9e180f03ffc083e95974d291353f0220fe52ae6d4897fecc7')
 install="${pkgname}.install"
+
+pkgver() {
+    cd mesa
+    local _ver
+    _ver=$(<VERSION)
+
+    local _patchver
+    local _patchfile
+    for _patchfile in "${source[@]}"; do
+        _patchfile="${_patchfile%%::*}"
+        _patchfile="${_patchfile##*/}"
+        [[ $_patchfile = *.patch ]] || continue
+        _patchver="${_patchver}$(md5sum ${srcdir}/${_patchfile} | cut -c1-32)"
+    done
+    _patchver="$(echo -n $_patchver | md5sum | cut -c1-7)"
+
+    echo ${_ver/-/_}.$(git rev-list --count HEAD).$(git rev-parse --short HEAD).${_patchver}
+}
 
 prepare() {
   # HACK: Don't copy Mesa defaults (they're basically useless for this standalone driver)
@@ -34,34 +48,10 @@ prepare() {
   # It's only used for a RADV-specific trace feature so it's useless for us
   sed -i 's/with_xcb_keysyms = dep_xcb_keysyms.found()/with_xcb_keysyms = false/' meson.build
 
-  # Set some common patch command options
-  _patch_opts="--no-backup-if-mismatch -Np1 -i"
-
-  ### DXVK v2.0+ FIRE FESTIVAL (that is somehow working) ###
-
-  # HACK: Always expose Vulkan memory model/Vulkan 1.3
-  # NAK does properly support those now but the compiler is still WIP for pre-Volta GPUs (so I'll enable these at the cost of CTS tests)
-  sed -i 's/KHR_vulkan_memory_model = nvk_use_nak(info)/KHR_vulkan_memory_model = true/' src/nouveau/vulkan/nvk_physical_device.c
-  sed -i 's/vulkanMemoryModel = nvk_use_nak(info)/vulkanMemoryModel = true/' src/nouveau/vulkan/nvk_physical_device.c
-  sed -i 's/VK_MAKE_VERSION(1, 0/VK_MAKE_VERSION(1, 3/' src/nouveau/vulkan/nvk_physical_device.c
-
   ### Misc stuff ###
-
-  # Add EXT_memory_budget (https://gitlab.freedesktop.org/nouveau/mesa/-/merge_requests/172)
-  # (fixes a vulkaninfo warning)
-  patch ${_patch_opts} ../nvk-memory-budget.patch
-
-  # Add imad/iadd3 support (https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/27159)
-  # (improves performance greatly in certain cases)
-  patch ${_patch_opts} ../nak-iadd3-imad.patch
 
   # Mark this NVK package with a signature (so I could track who's using it for bug report purposes)
   sed -i 's/"Mesa " PACKAGE_VERSION/"Mesa DodoNVK " PACKAGE_VERSION/' src/nouveau/vulkan/nvk_physical_device.c
-}
-
-pkgver() {
-  cd mesa
-  git describe --long --tags --abbrev=7 | sed 's/\([^-]*-g\)/r\1/;s/-/./g'
 }
 
 build() {
@@ -82,7 +72,7 @@ build() {
     -D b_ndebug=false \
     -D platforms=x11,wayland \
     -D gallium-drivers= \
-    -D vulkan-drivers=nouveau-experimental \
+    -D vulkan-drivers=nouveau \
     -D vulkan-layers= \
     -D dri3=enabled \
     -D egl=disabled \
