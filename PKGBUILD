@@ -3,7 +3,7 @@
 
 pkgname=lib32-vulkan-nouveau-git
 pkgdesc="Nouveau Vulkan (NVK) EXPERIMENTAL Mesa driver with some additions (32-bit Git version)"
-pkgver=24.1.0_devel.185534.4c73e529332.d41d8cd
+pkgver=24.1.0_devel.186023.2cd192f8799.d41d8cd
 pkgrel=1
 arch=('x86_64')
 depends=('lib32-libdrm' 'lib32-libxshmfence' 'lib32-libx11' 'lib32-systemd' 'lib32-vulkan-icd-loader' 'lib32-wayland')
@@ -14,7 +14,7 @@ optdepends=('lib32-vulkan-mesa-layers: Additional Vulkan layers'
 provides=('lib32-vulkan-driver')
 url="https://gitlab.freedesktop.org/mesa/mesa"
 license=('MIT AND BSD-3-Clause AND SGI-B-2.0')
-source=("mesa::git+https://gitlab.freedesktop.org/mesa/mesa.git#commit=4c73e529332d217de79f16659d24ea2dbfd1b3ab"
+source=("mesa::git+https://gitlab.freedesktop.org/mesa/mesa.git#commit=2cd192f8799c8cc27cd76e3acae45e807aadd926"
         LICENSE)
 sha512sums=('SKIP'
             'f9f0d0ccf166fe6cb684478b6f1e1ab1f2850431c06aa041738563eb1808a004e52cdec823c103c9e180f03ffc083e95974d291353f0220fe52ae6d4897fecc7')
